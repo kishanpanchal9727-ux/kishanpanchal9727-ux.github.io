@@ -70,7 +70,7 @@ if (loggedInUser) {
     document.body.style.backgroundColor = '#10141d';
     
     // Real-time connection start kijiye
-    const socket = io();
+    const socket = io("https://hk-chat-backend.onrender.com");
     const username = loggedInUser;
     const roomName = 'global';
     

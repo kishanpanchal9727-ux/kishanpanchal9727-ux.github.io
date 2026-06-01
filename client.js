@@ -469,7 +469,6 @@ if (loggedInUser) {
             searchTimer = setTimeout(async () => {
                 const q = searchInput.value.trim();
                 if (!q) {
-                    // refresh full list from server state
                     renderActiveUsers();
                     return;
                 }
@@ -477,7 +476,6 @@ if (loggedInUser) {
                     const res = await fetch(`https://hk-chat-backend.onrender.com/search/users?q=${encodeURIComponent(q)}`, { headers: { 'Authorization': `Bearer ${authToken}` } });
                     const data = await res.json();
                     if (data.success) {
-                        // map results into activeUsers-like array
                         activeUsers = data.results.map(u => ({ username: u.username, online: !!u.online }));
                         renderActiveUsers();
                     }
@@ -493,7 +491,6 @@ if (loggedInUser) {
         activeUsersList.innerHTML = '';
 
         activeUsers.forEach((user) => {
-                // don't show the logged-in user in the active list
                 if (normalizeUsername(user.username) === normalizedLoggedInUser) {
                     return;
                 }
@@ -533,7 +530,6 @@ if (loggedInUser) {
             
             li.appendChild(userBtn);
 
-            // Unread badge
             const normalizedUser = normalizeUsername(user.username);
             if (unreadCounts[normalizedUser]) {
                 const badge = document.createElement('span');
@@ -581,7 +577,6 @@ if (loggedInUser) {
                 return;
             }
 
-            // load current profile
             const avatarPreview = document.getElementById('profile-avatar-preview');
             try {
                 const headers = { 'Authorization': `Bearer ${authToken}` };
@@ -635,7 +630,6 @@ if (loggedInUser) {
                 const data = await res.json();
                 if (data.success) {
                     alert('Profile updated');
-                    // update preview and header avatar if provided by server
                     const avatarPreview = document.getElementById('profile-avatar-preview');
                     if (data.user && data.user.avatar) {
                         if (avatarPreview) {
@@ -643,4 +637,139 @@ if (loggedInUser) {
                             avatarPreview.style.display = 'block';
                         }
                         if (chatWithAvatarEl) {
-                            chat
+                            chatWithAvatarEl.style.backgroundImage = `url(${data.user.avatar})`;
+                            chatWithAvatarEl.textContent = '';
+                            chatWithAvatarEl.style.backgroundSize = 'cover';
+                        }
+                        if (accountAvatar) accountAvatar.src = data.user.avatar;
+                        if (accountAvatarLarge) accountAvatarLarge.src = data.user.avatar;
+                    }
+                    if (accountUsername) accountUsername.textContent = username;
+                    if (accountEmail) accountEmail.textContent = `Email: ${profileEmail.value || 'none'}`;
+                    if (accountPhone) accountPhone.textContent = `Phone: ${profilePhone.value || 'none'}`;
+                    profileModal.style.display = 'none';
+                } else {
+                    alert(data.message || 'Profile update failed');
+                }
+            } catch (err) {
+                console.error('Profile save error', err);
+                alert('Profile update failed');
+            }
+        });
+
+        if (profileAvatar) {
+            profileAvatar.addEventListener('change', () => {
+                if (profileAvatar.files && profileAvatar.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const avatarPreview = document.getElementById('profile-avatar-preview');
+                        if (avatarPreview) {
+                            avatarPreview.src = e.target.result;
+                            avatarPreview.style.display = 'block';
+                            if (accountAvatar) accountAvatar.src = e.target.result;
+                            if (accountAvatarLarge) accountAvatarLarge.src = e.target.result;
+                        }
+                    };
+                    reader.readAsDataURL(profileAvatar.files[0]);
+                }
+            });
+        }
+    }
+
+    if (accountToggle && accountPanel) {
+        accountToggle.addEventListener('click', () => {
+            accountPanel.classList.toggle('hidden');
+        });
+    }
+    if (accountEditBtn) {
+        accountEditBtn.addEventListener('click', () => {
+            if (openProfileBtn) openProfileBtn.click();
+            if (accountPanel) accountPanel.classList.add('hidden');
+        });
+    }
+    if (accountLogoutBtn) {
+        accountLogoutBtn.addEventListener('click', () => {
+            if (logoutBtn) logoutBtn.click();
+            if (accountPanel) accountPanel.classList.add('hidden');
+        });
+    }
+
+    socket.on('unread counts', (counts) => {
+        unreadCounts = Object.entries(counts || {}).reduce((acc, [userKey, count]) => {
+            acc[normalizeUsername(userKey)] = count;
+            return acc;
+        }, {});
+        renderActiveUsers();
+    });
+
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            socket.emit('logout');
+            socket.disconnect();
+            localStorage.removeItem('authToken');
+            window.location.href = '/';
+        });
+    }
+}
+
+// --- LOGIN / SIGNUP TOGGLE ---
+if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+        if (errorDisplay) errorDisplay.style.display = 'none';
+        if (isLoginMode) {
+            submitBtn.textContent = "Sign Up";
+            toggleBtn.innerHTML = "Have an account? <span>Log In</span>";
+            isLoginMode = false;
+        } else {
+            submitBtn.textContent = "Log In";
+            toggleBtn.innerHTML = "Don't have an account? <span>Sign up</span>";
+            isLoginMode = true;
+        }
+    });
+}
+
+// --- AUTHENTICATION ---
+if (authForm) {
+    authForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (errorDisplay) errorDisplay.style.display = 'none';
+
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        const targetUrl = isLoginMode 
+            ? 'https://hk-chat-backend.onrender.com/login' 
+            : 'https://hk-chat-backend.onrender.com/signup';
+
+        try {
+            const response = await fetch(targetUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                if (isLoginMode) {
+                    localStorage.setItem('authToken', result.token);
+                    window.location.href = `/?username=${result.username}`;
+                } else {
+                    alert(result.message);
+                    if (toggleBtn) toggleBtn.click();
+                }
+            } else {
+                if (errorDisplay) {
+                    errorDisplay.textContent = result.message;
+                    errorDisplay.style.display = 'block';
+                }
+            }
+        } catch (err) {
+            if (errorDisplay) {
+                errorDisplay.textContent = "Server se judne me error aaya.";
+                errorDisplay.style.display = 'block';
+            }
+        }
+    });
+}

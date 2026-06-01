@@ -8,19 +8,14 @@
 </head>
 <body>
 
-    <!-- <video autoplay muted loop id="bg-video">
-        <source src="/doraemon-bg2.mp4" type="video/mp4">
-        Your browser does not support HTML5 video.
-    </video> -->
-
     <div id="auth-interface" class="auth-container">
         <div id="form-title" class="auth-logo">💬 HK APP 💬</div>
         
         <div id="login-error" style="color: #ff4a5a; font-size: 13px; font-weight: 600; margin-bottom: 15px; display: none; text-align: center;"></div>
         
-        <form id="auth-form" class="auth-form">
-            <input type="text" name="username" placeholder="Username" required />
-            <input type="password" name="password" placeholder="Password" required />
+        <form id="auth-form" class="auth-form" onsubmit="event.preventDefault();">
+            <input type="text" name="username" id="username" placeholder="Username" required />
+            <input type="password" name="password" id="password" placeholder="Password" required />
             <button type="submit" id="submit-btn" class="auth-btn">Log In</button>
         </form>
         
@@ -84,7 +79,7 @@
                 <ul id="messages"></ul>
                 <div id="typing-indicator" class="typing-status"></div>
 
-                <form id="chat-form">
+                <form id="chat-form" onsubmit="event.preventDefault();">
                     <div id="preview-container" style="display: none; position: relative; padding: 10px; background: rgba(30, 37, 49, 0.9); border-radius: 8px; margin-bottom: 10px; max-width: 150px;">
                         <img id="image-preview" src="" style="max-width: 100%; max-height: 100px; border-radius: 6px; display: block;" />
                         <button type="button" id="cancel-preview-btn" style="position: absolute; top: -5px; right: -5px; background: #ff4a5a; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center;">X</button>
@@ -101,26 +96,26 @@
         </div>
     </div>
 
-    <!-- Profile Edit Modal (basic) -->
     <div id="profile-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:9999;">
         <div style="background:#0f1720; padding:20px; border-radius:12px; width:360px; color:#e6eef8;">
             <h3 style="margin-bottom:8px;">Edit Profile</h3>
-            <form id="profile-form">
+            <form id="profile-form" onsubmit="event.preventDefault();">
                 <div style="margin-bottom:8px; display:flex; gap:10px; align-items:center;">
                     <img id="profile-avatar-preview" src="" alt="avatar preview" style="width:56px; height:56px; border-radius:50%; object-fit:cover; display:none; border:2px solid rgba(0,238,255,0.2);" />
                     <div style="flex:1;">
                         <label>About</label>
-                        <textarea id="profile-about" rows="3" style="width:100%; padding:8px; border-radius:8px;"></textarea>
+                        <textarea id="profile-about" rows="3" style="width:100%; padding:8px; border-radius:8px; background:#141821; color:#fff; border:1px solid rgba(255,255,255,0.1);"></textarea>
                     </div>
                 </div>
                 <div style="margin-bottom:8px;"><label>Avatar</label><input type="file" id="profile-avatar" accept="image/*" /></div>
-                <div style="margin-bottom:8px;"><label>Phone</label><input id="profile-phone" type="text" placeholder="Phone" style="width:100%; padding:8px; border-radius:8px;" /></div>
-                <div style="margin-bottom:8px;"><label>Email</label><input id="profile-email" type="email" placeholder="Email" style="width:100%; padding:8px; border-radius:8px;" /></div>
-                <div style="display:flex; gap:8px; justify-content:flex-end;"><button type="button" id="close-profile" style="padding:8px 12px;">Cancel</button><button type="submit" style="padding:8px 12px; background:#00eeff; border:none; color:#071423; font-weight:700; border-radius:8px;">Save</button></div>
+                <div style="margin-bottom:8px;"><label>Phone</label><input id="profile-phone" type="text" placeholder="Phone" style="width:100%; padding:8px; border-radius:8px; background:#141821; color:#fff; border:1px solid rgba(255,255,255,0.1);" /></div>
+                <div style="margin-bottom:8px;"><label>Email</label><input id="profile-email" type="email" placeholder="Email" style="width:100%; padding:8px; border-radius:8px; background:#141821; color:#fff; border:1px solid rgba(255,255,255,0.1);" /></div>
+                <div style="display:flex; gap:8px; justify-content:flex-end;"><button type="button" id="close-profile" style="padding:8px 12px; background:rgba(255,255,255,0.1); color:#fff; border:none; border-radius:6px; cursor:pointer;">Cancel</button><button type="submit" style="padding:8px 12px; background:#00eeff; border:none; color:#071423; font-weight:700; border-radius:8px; cursor:pointer;">Save</button></div>
             </form>
         </div>
     </div>
-   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="/client.js"></script>
 </body>
 </html>

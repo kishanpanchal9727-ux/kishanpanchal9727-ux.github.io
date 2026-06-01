@@ -69,7 +69,7 @@ if (loggedInUser) {
     document.getElementById('chat-interface').style.display = 'flex';
     document.body.style.backgroundColor = '#10141d';
     
-    // Real-time connection start kijiye
+    // Real-time connection start kijiye (Render Cloud Server Link)
     const socket = io("https://hk-chat-backend.onrender.com");
     const username = loggedInUser;
     const roomName = 'global';
@@ -150,7 +150,7 @@ if (loggedInUser) {
     const editMessage = (messageId, currentText) => {
         const newText = prompt('Edit message:', currentText);
         if (newText && newText !== currentText) {
-            fetch('/message/edit', {
+            fetch('https://hk-chat-backend.onrender.com/message/edit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
                 body: JSON.stringify({ messageId, newText })
@@ -170,7 +170,7 @@ if (loggedInUser) {
 
     const deleteMessage = (messageId) => {
         if (confirm('Delete this message?')) {
-            fetch('/message/delete', {
+            fetch('https://hk-chat-backend.onrender.com/message/delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
                 body: JSON.stringify({ messageId })
@@ -296,7 +296,7 @@ if (loggedInUser) {
                 formData.append('image', file);
 
                 try {
-                    const response = await fetch('/upload-image', {
+                    const response = await fetch('https://hk-chat-backend.onrender.com/upload-image', {
                         method: 'POST',
                         body: formData
                     });
@@ -474,7 +474,7 @@ if (loggedInUser) {
                     return;
                 }
                 try {
-                    const res = await fetch(`/search/users?q=${encodeURIComponent(q)}`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+                    const res = await fetch(`https://hk-chat-backend.onrender.com/search/users?q=${encodeURIComponent(q)}`, { headers: { 'Authorization': `Bearer ${authToken}` } });
                     const data = await res.json();
                     if (data.success) {
                         // map results into activeUsers-like array
@@ -585,7 +585,7 @@ if (loggedInUser) {
             const avatarPreview = document.getElementById('profile-avatar-preview');
             try {
                 const headers = { 'Authorization': `Bearer ${authToken}` };
-                const res = await fetch('/profile', { headers });
+                const res = await fetch('https://hk-chat-backend.onrender.com/profile', { headers });
                 const data = await res.json();
                 if (data.success && data.user) {
                     profileAbout.value = data.user.about || '';
@@ -631,7 +631,7 @@ if (loggedInUser) {
             fd.append('email', profileEmail.value || '');
             if (profileAvatar.files && profileAvatar.files[0]) fd.append('avatar', profileAvatar.files[0]);
             try {
-                const res = await fetch('/profile', { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` }, body: fd });
+                const res = await fetch('https://hk-chat-backend.onrender.com/profile', { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` }, body: fd });
                 const data = await res.json();
                 if (data.success) {
                     alert('Profile updated');
@@ -643,139 +643,4 @@ if (loggedInUser) {
                             avatarPreview.style.display = 'block';
                         }
                         if (chatWithAvatarEl) {
-                            chatWithAvatarEl.style.backgroundImage = `url(${data.user.avatar})`;
-                            chatWithAvatarEl.textContent = '';
-                            chatWithAvatarEl.style.backgroundSize = 'cover';
-                        }
-                        if (accountAvatar) accountAvatar.src = data.user.avatar;
-                        if (accountAvatarLarge) accountAvatarLarge.src = data.user.avatar;
-                    }
-                    if (accountUsername) accountUsername.textContent = username;
-                    if (accountEmail) accountEmail.textContent = `Email: ${profileEmail.value || 'none'}`;
-                    if (accountPhone) accountPhone.textContent = `Phone: ${profilePhone.value || 'none'}`;
-                    profileModal.style.display = 'none';
-                } else {
-                    alert(data.message || 'Profile update failed');
-                }
-            } catch (err) {
-                console.error('Profile save error', err);
-                alert('Profile update failed');
-            }
-        });
-
-        // show local preview when user picks a file
-        if (profileAvatar) {
-            profileAvatar.addEventListener('change', () => {
-                if (profileAvatar.files && profileAvatar.files[0]) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const avatarPreview = document.getElementById('profile-avatar-preview');
-                        if (avatarPreview) {
-                            avatarPreview.src = e.target.result;
-                            avatarPreview.style.display = 'block';
-                            if (accountAvatar) accountAvatar.src = e.target.result;
-                            if (accountAvatarLarge) accountAvatarLarge.src = e.target.result;
-                        }
-                    };
-                    reader.readAsDataURL(profileAvatar.files[0]);
-                }
-            });
-        }
-    }
-
-    if (accountToggle && accountPanel) {
-        accountToggle.addEventListener('click', () => {
-            accountPanel.classList.toggle('hidden');
-        });
-    }
-    if (accountEditBtn) {
-        accountEditBtn.addEventListener('click', () => {
-            if (openProfileBtn) openProfileBtn.click();
-            if (accountPanel) accountPanel.classList.add('hidden');
-        });
-    }
-    if (accountLogoutBtn) {
-        accountLogoutBtn.addEventListener('click', () => {
-            if (logoutBtn) logoutBtn.click();
-            if (accountPanel) accountPanel.classList.add('hidden');
-        });
-    }
-
-    socket.on('unread counts', (counts) => {
-        unreadCounts = Object.entries(counts || {}).reduce((acc, [userKey, count]) => {
-            acc[normalizeUsername(userKey)] = count;
-            return acc;
-        }, {});
-        renderActiveUsers();
-    });
-
-    // LOGOUT
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            socket.emit('logout');
-            socket.disconnect();
-            localStorage.removeItem('authToken');
-            window.location.href = '/';
-        });
-    }
-}
-
-// --- LOGIN / SIGNUP TOGGLE ---
-if (toggleBtn) {
-    toggleBtn.addEventListener('click', () => {
-        if (errorDisplay) errorDisplay.style.display = 'none';
-        if (isLoginMode) {
-            submitBtn.textContent = "Sign Up";
-            toggleBtn.innerHTML = "Have an account? <span>Log In</span>";
-            isLoginMode = false;
-        } else {
-            submitBtn.textContent = "Log In";
-            toggleBtn.innerHTML = "Don't have an account? <span>Sign up</span>";
-            isLoginMode = true;
-        }
-    });
-}
-
-// --- AUTHENTICATION ---
-if (authForm) {
-    authForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (errorDisplay) errorDisplay.style.display = 'none';
-
-        const username = authForm.username.value;
-        const password = authForm.password.value;
-
-        const targetUrl = isLoginMode ? '/login' : '/signup';
-
-        try {
-            const response = await fetch(targetUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                if (isLoginMode) {
-                    localStorage.setItem('authToken', result.token);
-                    window.location.href = `/?username=${result.username}`;
-                } else {
-                    alert(result.message);
-                    if (toggleBtn) toggleBtn.click();
-                }
-            } else {
-                if (errorDisplay) {
-                    errorDisplay.textContent = result.message;
-                    errorDisplay.style.display = 'block';
-                }
-            }
-        } catch (err) {
-            if (errorDisplay) {
-                errorDisplay.textContent = "Server se judne me error aaya.";
-                errorDisplay.style.display = 'block';
-            }
-        }
-    });
-}
+                            chat

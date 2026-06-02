@@ -51,10 +51,10 @@ const showNotification = (title, options = {}) => {
     }
 };
 
-// URL se check karenge ki kya user login karke aaya hai
+// URL aur Session Persistence Setup
 const urlParams = new URLSearchParams(window.location.search);
-const loggedInUser = urlParams.get('username');
-const authToken = localStorage.getItem('authToken') || '';
+const loggedInUser = urlParams.get('username') || sessionStorage.getItem('username');
+const authToken = sessionStorage.getItem('authToken') || localStorage.getItem('authToken') || '';
 
 // --- GLOBAL VARIABLES ---
 const errorDisplay = document.getElementById('login-error');
@@ -63,14 +63,17 @@ const authForm = document.getElementById('auth-form');
 const submitBtn = document.getElementById('submit-btn');
 let isLoginMode = true;
 
-// Agar user login ho chuka hai, toh chat show karo, nahi toh form dikhao
-if (loggedInUser) {
+// Agar user session ya URL se valid login hai
+if (loggedInUser && authToken) {
     document.getElementById('auth-interface').style.display = 'none';
     document.getElementById('chat-interface').style.display = 'flex';
     document.body.style.backgroundColor = '#10141d';
     
-    // Real-time connection start kijiye (Render Cloud Server Link)
-    const socket = io("https://hk-chat-backend.onrender.com");
+    // Live Cloud Deployment Socket Connection Configuration
+    const socket = io("https://hk-chat-backend.onrender.com", {
+        transports: ['websocket', 'polling']
+    });
+    
     const username = loggedInUser;
     const roomName = 'global';
     
@@ -83,7 +86,7 @@ if (loggedInUser) {
     const input = document.getElementById('message-input');
     const messagesList = document.getElementById('messages');
     const imageInput = document.getElementById('image-input');
-    let currentPrivateTarget = null;
+    let currentPrivateTarget = localStorage.getItem('currentPrivateTarget') || null;
     let unreadCounts = {};
     let activeUsers = [];
     let messageHistory = [];
@@ -94,7 +97,7 @@ if (loggedInUser) {
     const imagePreview = document.getElementById('image-preview');
     const cancelPreviewBtn = document.getElementById('cancel-preview-btn');
 
-    // MESSAGE RENDERING WITH TIMESTAMPS AND STATUS
+    // MESSAGE RENDERING WITH TIMESTAMPS, AVATARS AND STATUS
     const createMessageElement = (data) => {
         const item = document.createElement('li');
         const sender = data.from || data.user;
@@ -122,7 +125,6 @@ if (loggedInUser) {
         
         html += `<div class="msg-meta">${timeStr} ${statusIcon} ${editedLabel}</div>`;
 
-        // Add edit/delete buttons for own messages
         if (isMine) {
             html += `<div class="msg-actions">
                 <button class="msg-action-btn edit-btn" data-msg-id="${data._id}" title="Edit message">✏️</button>
@@ -132,7 +134,6 @@ if (loggedInUser) {
 
         item.innerHTML = html;
 
-        // Attach event listeners for edit/delete
         const editBtn = item.querySelector('.edit-btn');
         const deleteBtn = item.querySelector('.delete-btn');
         
@@ -194,7 +195,6 @@ if (loggedInUser) {
         lastMessageDate = null;
 
         messages.forEach((msg) => {
-            // Add date separator if date changed
             if (shouldShowDateSeparator(lastMessageDate, msg.timestamp)) {
                 const dateSeparator = document.createElement('li');
                 dateSeparator.classList.add('date-separator');
@@ -220,7 +220,6 @@ if (loggedInUser) {
         updateChatHeader(null);
     };
 
-    // Chat header elements and helper to show selected user
     const chatWithNameEl = document.getElementById('chat-with-name');
     const chatWithStatusEl = document.getElementById('chat-with-status');
     const chatWithAvatarEl = document.getElementById('chat-with-avatar');
@@ -237,10 +236,19 @@ if (loggedInUser) {
         const found = activeUsers.find(u => normalizeUsername(u.username) === normalizeUsername(targetUsername));
         const displayName = found ? found.username.toLowerCase() : targetUsername.toLowerCase();
         if (chatWithNameEl) chatWithNameEl.textContent = displayName;
-        if (chatWithAvatarEl) chatWithAvatarEl.textContent = displayName.slice(0,1).toLowerCase();
+        if (chatWithAvatarEl) {
+            if (found && found.avatar) {
+                chatWithAvatarEl.style.backgroundImage = `url(https://hk-chat-backend.onrender.com${found.avatar})`;
+                chatWithAvatarEl.textContent = '';
+                chatWithAvatarEl.style.backgroundSize = 'cover';
+                chatWithAvatarEl.style.backgroundPosition = 'center';
+            } else {
+                chatWithAvatarEl.style.backgroundImage = '';
+                chatWithAvatarEl.textContent = displayName.slice(0,1).toLowerCase();
+            }
+        }
         if (chatWithStatusEl) chatWithStatusEl.textContent = (found && found.online) ? 'Online' : 'Offline';
     };
-
 
     // PREVIEW IMAGE HANDLING
     if (imageInput) {
@@ -261,7 +269,6 @@ if (loggedInUser) {
         });
     }
 
-    // CANCEL PREVIEW
     if (cancelPreviewBtn) {
         cancelPreviewBtn.addEventListener('click', () => {
             if (imageInput && imagePreview && previewContainer) {
@@ -281,9 +288,7 @@ if (loggedInUser) {
             const hasImage = imageInput && imageInput.files.length > 0;
             const textValue = input ? input.value.trim() : '';
 
-            if (!hasImage && textValue === '') {
-                return;
-            }
+            if (!hasImage && textValue === '') return;
 
             if (!currentPrivateTarget) {
                 alert('Please select a user from the sidebar to start a private chat.');
@@ -307,21 +312,12 @@ if (loggedInUser) {
                         return;
                     }
 
-                    // send as a private message when a target is selected
                     if (currentPrivateTarget) {
                         socket.emit('private message', {
                             from: username,
                             to: currentPrivateTarget,
                             text: textValue,
-                            image: result.url,
-                        });
-                    } else {
-                        socket.emit('chat message', { 
-                            user: username, 
-                            text: textValue, 
-                            image: result.url,
-                            to: null,
-                            isPrivate: false,
+                            image: `https://hk-chat-backend.onrender.com${result.url}`,
                         });
                     }
 
@@ -334,7 +330,6 @@ if (loggedInUser) {
                         input.value = '';
                         input.placeholder = 'Message...';
                     }
-
                     showNotification('Message Sent', { body: `Image sent to ${currentPrivateTarget}` });
                 } catch (error) {
                     console.error('Upload error:', error);
@@ -347,14 +342,6 @@ if (loggedInUser) {
                         to: currentPrivateTarget,
                         text: textValue,
                         image: null
-                    });
-                } else {
-                    socket.emit('chat message', { 
-                        user: username, 
-                        text: textValue, 
-                        image: null,
-                        to: null,
-                        isPrivate: false,
                     });
                 }
                 if (input) input.value = '';
@@ -435,7 +422,6 @@ if (loggedInUser) {
         renderMessages(filtered);
     });
 
-    // SYSTEM NOTIFICATIONS
     socket.off('system notification').on('system notification', (notificationText) => {
         if (!messagesList) return;
         const item = document.createElement('li');
@@ -445,23 +431,20 @@ if (loggedInUser) {
         messagesList.scrollTop = messagesList.scrollHeight;
     });
 
-    // CHAT HISTORY LOADING
     socket.on('chat history', (messages) => {
         messageHistory = messages;
         showEmptyChatNotice();
     });
 
-    // PRIVATE CHAT HISTORY
     socket.on('private history', (messages) => {
         messageHistory = messages;
         renderMessages(messages);
     });
 
-    // USERS LIST WITH ONLINE STATUS AND SEARCH
+    // SIDEBAR ACTIVE USERS LIST DESIGN WITH AVATARS
     const activeUsersList = document.getElementById('active-users-list');
     const searchInput = document.getElementById('search-input') || null;
 
-    // Debounced search helper
     let searchTimer = null;
     if (searchInput) {
         searchInput.addEventListener('input', () => {
@@ -476,7 +459,7 @@ if (loggedInUser) {
                     const res = await fetch(`https://hk-chat-backend.onrender.com/search/users?q=${encodeURIComponent(q)}`, { headers: { 'Authorization': `Bearer ${authToken}` } });
                     const data = await res.json();
                     if (data.success) {
-                        activeUsers = data.results.map(u => ({ username: u.username, online: !!u.online }));
+                        activeUsers = data.results.map(u => ({ username: u.username, online: !!u.online, avatar: u.avatar }));
                         renderActiveUsers();
                     }
                 } catch (err) {
@@ -491,9 +474,8 @@ if (loggedInUser) {
         activeUsersList.innerHTML = '';
 
         activeUsers.forEach((user) => {
-                if (normalizeUsername(user.username) === normalizedLoggedInUser) {
-                    return;
-                }
+            if (normalizeUsername(user.username) === normalizedLoggedInUser) return;
+            
             const li = document.createElement('li');
             li.className = 'user-item';
             
@@ -506,7 +488,13 @@ if (loggedInUser) {
             
             const avatar = document.createElement('span');
             avatar.className = 'user-avatar';
-            avatar.textContent = user.username.slice(0, 1).toLowerCase();
+            if (user.avatar) {
+                avatar.style.backgroundImage = `url(https://hk-chat-backend.onrender.com${user.avatar})`;
+                avatar.style.backgroundSize = 'cover';
+                avatar.style.backgroundPosition = 'center';
+            } else {
+                avatar.textContent = user.username.slice(0, 1).toLowerCase();
+            }
             
             const nameSpan = document.createElement('span');
             nameSpan.className = 'user-name';
@@ -523,6 +511,7 @@ if (loggedInUser) {
             userBtn.addEventListener('click', () => {
                 document.querySelectorAll('.user-btn').forEach(btn => btn.classList.remove('active'));
                 currentPrivateTarget = user.username;
+                localStorage.setItem('currentPrivateTarget', currentPrivateTarget);
                 userBtn.classList.add('active');
                 updateChatHeader(user.username);
                 socket.emit('get private history', { from: username, to: user.username });
@@ -546,12 +535,18 @@ if (loggedInUser) {
         if (!activeUsersList) return;
         activeUsers = users;
         renderActiveUsers();
+        if (currentPrivateTarget) {
+            const matched = activeUsers.find(u => normalizeUsername(u.username) === normalizeUsername(currentPrivateTarget));
+            if (matched) {
+                socket.emit('get private history', { from: username, to: currentPrivateTarget });
+            }
+        }
         if (!currentPrivateTarget) {
             showEmptyChatNotice();
         }
     });
 
-    // PROFILE MODAL HANDLERS
+    // PROFILE PANEL AND MODAL
     const openProfileBtn = document.getElementById('open-profile-btn');
     const profileModal = document.getElementById('profile-modal');
     const closeProfile = document.getElementById('close-profile');
@@ -570,56 +565,57 @@ if (loggedInUser) {
     const accountEditBtn = document.getElementById('account-edit-btn');
     const accountLogoutBtn = document.getElementById('account-logout-btn');
 
-    if (openProfileBtn && profileModal) {
-        openProfileBtn.addEventListener('click', async () => {
-            if (!authToken) {
-                alert('Please log in using the app first to edit your profile.');
-                return;
+    const loadAccountPanel = async () => {
+        if (!authToken) return;
+        try {
+            const res = await fetch('https://hk-chat-backend.onrender.com/profile', { headers: { 'Authorization': `Bearer ${authToken}` } });
+            const data = await res.json();
+            if (data.success && data.user) {
+                const fullAvatarUrl = data.user.avatar ? `https://hk-chat-backend.onrender.com${data.user.avatar}` : '';
+                if (accountAvatar) accountAvatar.src = fullAvatarUrl;
+                if (accountAvatarLarge) accountAvatarLarge.src = fullAvatarUrl;
+                if (accountUsername) accountUsername.textContent = data.user.username || username;
+                if (accountEmail) accountEmail.textContent = `Email: ${data.user.email || 'none'}`;
+                if (accountPhone) accountPhone.textContent = `Phone: ${data.user.phone || 'none'}`;
             }
+        } catch (err) {
+            console.error('Could not load account panel', err);
+        }
+    };
 
-            const avatarPreview = document.getElementById('profile-avatar-preview');
-            try {
-                const headers = { 'Authorization': `Bearer ${authToken}` };
-                const res = await fetch('https://hk-chat-backend.onrender.com/profile', { headers });
-                const data = await res.json();
-                if (data.success && data.user) {
-                    profileAbout.value = data.user.about || '';
-                    profilePhone.value = data.user.phone || '';
-                    profileEmail.value = data.user.email || '';
-                    if (data.user.avatar) {
-                        if (avatarPreview) {
-                            avatarPreview.src = data.user.avatar;
-                            avatarPreview.style.display = 'block';
-                        }
-                        if (accountAvatar) accountAvatar.src = data.user.avatar;
-                        if (accountAvatarLarge) accountAvatarLarge.src = data.user.avatar;
-                    } else {
-                        if (avatarPreview) avatarPreview.style.display = 'none';
-                        if (accountAvatar) accountAvatar.src = '';
-                        if (accountAvatarLarge) accountAvatarLarge.src = '';
+    loadAccountPanel();
+
+    const openProfileModal = async () => {
+        const avatarPreview = document.getElementById('profile-avatar-preview');
+        try {
+            const res = await fetch('https://hk-chat-backend.onrender.com/profile', { headers: { 'Authorization': `Bearer ${authToken}` } });
+            const data = await res.json();
+            if (data.success && data.user) {
+                profileAbout.value = data.user.about || '';
+                profilePhone.value = data.user.phone || '';
+                profileEmail.value = data.user.email || '';
+                if (data.user.avatar) {
+                    const fullAvatarUrl = `https://hk-chat-backend.onrender.com${data.user.avatar}`;
+                    if (avatarPreview) {
+                        avatarPreview.src = fullAvatarUrl;
+                        avatarPreview.style.display = 'block';
                     }
                 } else {
                     if (avatarPreview) avatarPreview.style.display = 'none';
                 }
-            } catch (err) {
-                console.error('Fetch profile error', err);
-                if (avatarPreview) avatarPreview.style.display = 'none';
             }
-            profileModal.style.display = 'flex';
-        });
-    }
+        } catch (err) {
+            console.error('Fetch profile error', err);
+        }
+        if (profileModal) profileModal.style.display = 'flex';
+    };
 
-    if (closeProfile && profileModal) {
-        closeProfile.addEventListener('click', () => { profileModal.style.display = 'none'; });
-    }
+    if (openProfileBtn) openProfileBtn.addEventListener('click', openProfileModal);
+    if (closeProfile) closeProfile.addEventListener('click', () => { profileModal.style.display = 'none'; });
 
     if (profileForm) {
         profileForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!authToken) {
-                alert('Please log in first to save your profile.');
-                return;
-            }
             const fd = new FormData();
             fd.append('about', profileAbout.value || '');
             fd.append('phone', profilePhone.value || '');
@@ -629,68 +625,37 @@ if (loggedInUser) {
                 const res = await fetch('https://hk-chat-backend.onrender.com/profile', { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` }, body: fd });
                 const data = await res.json();
                 if (data.success) {
-                    alert('Profile updated');
-                    const avatarPreview = document.getElementById('profile-avatar-preview');
-                    if (data.user && data.user.avatar) {
-                        if (avatarPreview) {
-                            avatarPreview.src = data.user.avatar;
-                            avatarPreview.style.display = 'block';
-                        }
-                        if (chatWithAvatarEl) {
-                            chatWithAvatarEl.style.backgroundImage = `url(${data.user.avatar})`;
-                            chatWithAvatarEl.textContent = '';
-                            chatWithAvatarEl.style.backgroundSize = 'cover';
-                        }
-                        if (accountAvatar) accountAvatar.src = data.user.avatar;
-                        if (accountAvatarLarge) accountAvatarLarge.src = data.user.avatar;
-                    }
-                    if (accountUsername) accountUsername.textContent = username;
-                    if (accountEmail) accountEmail.textContent = `Email: ${profileEmail.value || 'none'}`;
-                    if (accountPhone) accountPhone.textContent = `Phone: ${profilePhone.value || 'none'}`;
+                    alert('Profile updated successfully!');
+                    loadAccountPanel();
                     profileModal.style.display = 'none';
-                } else {
-                    alert(data.message || 'Profile update failed');
                 }
             } catch (err) {
                 console.error('Profile save error', err);
-                alert('Profile update failed');
             }
         });
-
-        if (profileAvatar) {
-            profileAvatar.addEventListener('change', () => {
-                if (profileAvatar.files && profileAvatar.files[0]) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const avatarPreview = document.getElementById('profile-avatar-preview');
-                        if (avatarPreview) {
-                            avatarPreview.src = e.target.result;
-                            avatarPreview.style.display = 'block';
-                            if (accountAvatar) accountAvatar.src = e.target.result;
-                            if (accountAvatarLarge) accountAvatarLarge.src = e.target.result;
-                        }
-                    };
-                    reader.readAsDataURL(profileAvatar.files[0]);
-                }
-            });
-        }
     }
 
     if (accountToggle && accountPanel) {
-        accountToggle.addEventListener('click', () => {
-            accountPanel.classList.toggle('hidden');
-        });
+        accountToggle.addEventListener('click', () => { accountPanel.classList.toggle('hidden'); });
     }
+
+    const performLogout = () => {
+        socket.emit('logout');
+        socket.disconnect();
+        sessionStorage.clear();
+        localStorage.clear();
+        window.location.href = '/';
+    };
+
     if (accountEditBtn) {
         accountEditBtn.addEventListener('click', () => {
-            if (openProfileBtn) openProfileBtn.click();
-            if (accountPanel) accountPanel.classList.add('hidden');
+            openProfileModal();
+            accountPanel.classList.add('hidden');
         });
     }
     if (accountLogoutBtn) {
         accountLogoutBtn.addEventListener('click', () => {
-            if (logoutBtn) logoutBtn.click();
-            if (accountPanel) accountPanel.classList.add('hidden');
+            performLogout();
         });
     }
 
@@ -702,18 +667,16 @@ if (loggedInUser) {
         renderActiveUsers();
     });
 
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            socket.emit('logout');
-            socket.disconnect();
-            localStorage.removeItem('authToken');
-            window.location.href = '/';
+    const sidebarChatBtn = document.getElementById('sidebar-chat-btn');
+    if (sidebarChatBtn) {
+        sidebarChatBtn.addEventListener('click', () => {
+            if (accountPanel) accountPanel.classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         });
     }
 }
 
-// --- LOGIN / SIGNUP TOGGLE ---
+// --- LOGIN / SIGNUP FORM TOGGLE ---
 if (toggleBtn) {
     toggleBtn.addEventListener('click', () => {
         if (errorDisplay) errorDisplay.style.display = 'none';
@@ -729,7 +692,7 @@ if (toggleBtn) {
     });
 }
 
-// --- AUTHENTICATION ---
+// --- CLOUD AUTHENTICATION HANDLERS ---
 if (authForm) {
     authForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -753,6 +716,8 @@ if (authForm) {
 
             if (result.success) {
                 if (isLoginMode) {
+                    sessionStorage.setItem('authToken', result.token);
+                    sessionStorage.setItem('username', result.username);
                     localStorage.setItem('authToken', result.token);
                     window.location.href = `/?username=${result.username}`;
                 } else {

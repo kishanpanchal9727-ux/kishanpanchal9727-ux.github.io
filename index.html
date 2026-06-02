@@ -4,14 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HK APP - Neon Chat Engine</title>
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="./style.css">
 </head>
 <body>
 
-    <!-- <video autoplay muted loop id="bg-video">
-        <source src="https://hk-chat-backend.onrender.com/uploads/doraemon-bg2.mp4" type="video/mp4">
+    <video autoplay muted loop id="bg-video">
         <source src="/doraemon-bg2.mp4" type="video/mp4">
-    </video> -->
+    </video>
 
     <div id="auth-interface" class="auth-container">
         <div id="form-title" class="auth-logo">💬 HK APP 💬</div>
@@ -36,10 +35,24 @@
                     <span class="neon-icon">💬</span>
                     <span class="main-hk-title">HK APP</span>
                     <span class="neon-icon">💬</span>
-                    <span class="room-title">Global Room</span>
                 </div>
-                <div class="chat-user-banner">
-                    Active Session: <span id="logged-in-user" class="logged-in-user"></span>
+                
+                <div class="account-panel-container">
+                    <button id="account-toggle" class="account-toggle" title="Open your account details">
+                        <img id="account-avatar" src="" alt="My profile" />
+                    </button>
+                    <div id="account-panel" class="account-panel hidden">
+                        <div class="account-preview">
+                            <img id="account-avatar-large" src="" alt="Profile photo" />
+                            <div class="account-info">
+                                <div id="account-username" class="account-name">Your Name</div>
+                                <div id="account-email" class="account-detail">Email: none</div>
+                                <div id="account-phone" class="account-detail">Phone: none</div>
+                            </div>
+                        </div>
+                        <button id="account-edit-btn" class="account-action-btn">Edit Profile</button>
+                        <button id="account-logout-btn" class="account-action-btn logout-btn">Logout</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -47,14 +60,10 @@
         <div class="chat-main-container">
             <div class="users-sidebar">
                 <h3>CHATS</h3>
-                <div style="margin-bottom:15px;">
-                    <input id="search-input" placeholder="Search contact users..." autocomplete="off" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background: rgba(20,24,33,0.6); color: #fff; font-size:13px;" />
+                <div style="margin-bottom:10px;">
+                    <input id="search-input" placeholder="Search users..." autocomplete="off" style="width:100%; padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background: rgba(20,24,33,0.6); color: #fff;" />
                 </div>
                 <ul id="active-users-list"></ul>
-                
-                <div class="sidebar-footer" style="margin-top: auto; padding-top: 10px;">
-                    <button id="sidebar-chat-btn" style="width:100%; padding:12px; border-radius:12px; border:none; background:rgba(0, 238, 255, 0.15); border: 1px solid rgba(0, 238, 255, 0.3); color:#00eeff; font-weight:700; cursor:pointer;">Scroll To Top</button>
-                </div>
             </div>
 
             <div class="messages-area">
@@ -64,26 +73,8 @@
                         <div id="chat-with-name" class="chat-with-name">Select a user to start chatting</div>
                         <div id="chat-with-status" class="chat-with-status">One-to-one private chat</div>
                     </div>
-                    
-                    <div class="account-panel-container">
-                        <button id="account-toggle" class="account-toggle" title="Open your account details">
-                            <img id="account-avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%231c212c'/></svg>" alt="My profile" />
-                        </button>
-                        <div id="account-panel" class="account-panel hidden">
-                            <div class="account-preview">
-                                <img id="account-avatar-large" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%231c212c'/></svg>" alt="Profile photo" />
-                                <div class="account-info">
-                                    <div id="account-username" class="account-name">Loading...</div>
-                                    <div id="account-email" class="account-detail">Email: none</div>
-                                    <div id="account-phone" class="account-detail">Phone: none</div>
-                                </div>
-                            </div>
-                            <button id="account-edit-btn" class="account-action-btn">Edit Profile</button>
-                            <button id="account-logout-btn" class="account-action-btn logout-btn">Logout</button>
-                        </div>
-                    </div>
                 </div>
-
+                
                 <ul id="messages"></ul>
                 <div id="typing-indicator" class="typing-status"></div>
 
@@ -94,9 +85,9 @@
                     </div>
 
                     <div class="form-container">
-                        <label for="image-input" class="attach-btn" title="Upload Media Media">📷</label>
+                        <label for="image-input" class="attach-btn">📷</label>
                         <input type="file" id="image-input" accept="image/*" style="display: none;" />
-                        <input id="message-input" autocomplete="off" placeholder="Type a message secure..." />
+                        <input id="message-input" autocomplete="off" placeholder="Message..." />
                         <button type="submit" class="send-btn">Send</button>
                     </div>
                 </form>
@@ -104,38 +95,29 @@
         </div>
     </div>
 
-    <div id="profile-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:9999; backdrop-filter: blur(4px);">
-        <div style="background:#0f1720; padding:25px; border-radius:16px; width:380px; color:#e6eef8; border: 1px solid rgba(0, 238, 255, 0.2); box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
-            <h3 style="margin-bottom:15px; font-weight: 800; letter-spacing: 0.5px; color:#00eeff;">Update Profile Engine</h3>
+    <div id="profile-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:9999;">
+        <div style="background:#0f1720; padding:20px; border-radius:12px; width:360px; color:#e6eef8;">
+            <h3 style="margin-bottom:8px;">Edit Profile</h3>
             <form id="profile-form" onsubmit="event.preventDefault();">
-                <div style="margin-bottom:15px; display:flex; gap:12px; align-items:center;">
-                    <img id="profile-avatar-preview" src="" alt="avatar preview" style="width:60px; height:60px; border-radius:50%; object-fit:cover; display:none; border:2px solid #00eeff; box-shadow: 0 0 10px rgba(0,238,255,0.3);" />
+                <div style="margin-bottom:8px; display:flex; gap:10px; align-items:center;">
+                    <img id="profile-avatar-preview" src="" alt="avatar preview" style="width:56px; height:56px; border-radius:50%; object-fit:cover; display:none; border:2px solid rgba(0,238,255,0.2);" />
                     <div style="flex:1;">
-                        <label style="font-size: 12px; color:#8fa4bf; text-transform: uppercase; font-weight: 700;">Status Status Info</label>
-                        <textarea id="profile-about" rows="2" style="width:100%; padding:8px; border-radius:8px; background:#141821; color:#fff; border:1px solid rgba(255,255,255,0.1); font-size:13px; resize: none;"></textarea>
+                        <label>About</label>
+                        <textarea id="profile-about" rows="3" style="width:100%; padding:8px; border-radius:8px; background:#141821; color:#fff; border:1px solid rgba(255,255,255,0.1);"></textarea>
                     </div>
                 </div>
-                <div style="margin-bottom:12px;">
-                    <label style="font-size: 12px; color:#8fa4bf; display:block; margin-bottom:4px; font-weight:700;">AVATAR FILE</label>
-                    <input type="file" id="profile-avatar" accept="image/*" style="font-size: 13px; color:#8fa4bf;" />
-                </div>
-                <div style="margin-bottom:12px;">
-                    <label style="font-size: 12px; color:#8fa4bf; display:block; margin-bottom:4px; font-weight:700;">PHONE NUMBER</label>
-                    <input id="profile-phone" type="text" placeholder="Enter contact node..." style="width:100%; padding:10px; border-radius:8px; background:#141821; color:#fff; border:1px solid rgba(255,255,255,0.1); font-size:13px;" />
-                </div>
-                <div style="margin-bottom:20px;">
-                    <label style="font-size: 12px; color:#8fa4bf; display:block; margin-bottom:4px; font-weight:700;">EMAIL DOMAIN</label>
-                    <input id="profile-email" type="email" placeholder="Enter mail network..." style="width:100%; padding:10px; border-radius:8px; background:#141821; color:#fff; border:1px solid rgba(255,255,255,0.1); font-size:13px;" />
-                </div>
-                <div style="display:flex; gap:10px; justify-content:flex-end;">
-                    <button type="button" id="close-profile" style="padding:10px 16px; background:rgba(255,255,255,0.06); color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px;">Cancel</button>
-                    <button type="submit" style="padding:10px 20px; background:linear-gradient(135deg, #009df6, #00eeff); border:none; color:#071423; font-weight:800; border-radius:8px; cursor:pointer; font-size:13px; box-shadow: 0 4px 12px rgba(0,238,255,0.3);">Save Changes</button>
+                <div style="margin-bottom:8px;"><label>Avatar</label><input type="file" id="profile-avatar" accept="image/*" /></div>
+                <div style="margin-bottom:8px;"><label>Phone</label><input id="profile-phone" type="text" placeholder="Phone" style="width:100%; padding:8px; border-radius:8px; background:#141821; color:#fff; border:1px solid rgba(255,255,255,0.1);" /></div>
+                <div style="margin-bottom:8px;"><label>Email</label><input id="profile-email" type="email" placeholder="Email" style="width:100%; padding:8px; border-radius:8px; background:#141821; color:#fff; border:1px solid rgba(255,255,255,0.1);" /></div>
+                <div style="display:flex; gap:8px; justify-content:flex-end;">
+                    <button type="button" id="close-profile" style="padding:8px 12px; background:rgba(255,255,255,0.1); color:#fff; border:none; border-radius:6px; cursor:pointer;">Cancel</button>
+                    <button type="submit" style="padding:8px 12px; background:#00eeff; border:none; color:#071423; font-weight:700; border-radius:8px; cursor:pointer;">Save</button>
                 </div>
             </form>
         </div>
     </div>
 
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script src="/client.js"></script>
+    <script src="./client.js"></script>
 </body>
 </html>

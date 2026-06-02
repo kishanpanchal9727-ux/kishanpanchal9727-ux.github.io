@@ -1,141 +1,332 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HK APP - Neon Chat Engine</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+/* --- GLOBAL DESIGN & BACKGROUND ENGINE --- */
+*{ box-sizing: border-box; margin: 0; padding: 0; }
 
-    <video autoplay muted loop id="bg-video">
-        <source src="https://hk-chat-backend.onrender.com/uploads/doraemon-bg2.mp4" type="video/mp4">
-        <source src="/doraemon-bg2.mp4" type="video/mp4">
-    </video>
+body { 
+    font-family: '-apple-system', BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+    display: flex; 
+    flex-direction: column; 
+    height: 100vh; 
+    justify-content: center; 
+    align-items: center;
+    color: #e3e6ed;
+    overflow: hidden;
+    background-color: #10141d;
+}
 
-    <div id="auth-interface" class="auth-container">
-        <div id="form-title" class="auth-logo">💬 HK APP 💬</div>
-        
-        <div id="login-error" style="color: #ff4a5a; font-size: 13px; font-weight: 600; margin-bottom: 15px; display: none; text-align: center;"></div>
-        
-        <form id="auth-form" class="auth-form" onsubmit="event.preventDefault();">
-            <input type="text" name="username" id="username" placeholder="Username" required autocomplete="off" />
-            <input type="password" name="password" id="password" placeholder="Password" required />
-            <button type="submit" id="submit-btn" class="auth-btn">Log In</button>
-        </form>
-        
-        <div id="toggle-form" class="toggle-text">
-            Don't have an account? <span>Sign up</span>
-        </div>
-    </div>
+#bg-video {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    z-index: -1;
+    object-fit: cover;
+}
+ 
+.auth-container { 
+    background: rgba(20, 30, 55, 0.65); 
+    border: 2px solid rgba(0, 157, 246, 0.4); 
+    padding: 40px; 
+    width: 360px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    border-radius: 16px; 
+    backdrop-filter: blur(8px);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 157, 246, 0.2); 
+    z-index: 2;
+}
 
-    <div id="chat-interface">
-        <div class="chat-header">
-            <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; width: 100%;">
-                <div class="hk-title-container">
-                    <span class="neon-icon">💬</span>
-                    <span class="main-hk-title">HK APP</span>
-                    <span class="neon-icon">💬</span>
-                    <span class="room-title">Global Room</span>
-                </div>
-                <div class="chat-user-banner">
-                    Active Session: <span id="logged-in-user" class="logged-in-user"></span>
-                </div>
-            </div>
-        </div>
+.auth-logo { 
+    font-size: 32px; 
+    font-weight: 900; 
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 30px; 
+    color: #00eeff; 
+    text-shadow: 0 0 15px rgba(0, 238, 255, 0.8);
+}
 
-        <div class="chat-main-container">
-            <div class="users-sidebar">
-                <h3>CHATS</h3>
-                <div style="margin-bottom:15px;">
-                    <input id="search-input" placeholder="Search contact users..." autocomplete="off" style="width:100%; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background: rgba(20,24,33,0.6); color: #fff; font-size:13px;" />
-                </div>
-                <ul id="active-users-list"></ul>
-                
-                <div class="sidebar-footer" style="margin-top: auto; padding-top: 10px;">
-                    <button id="sidebar-chat-btn" style="width:100%; padding:12px; border-radius:12px; border:none; background:rgba(0, 238, 255, 0.15); border: 1px solid rgba(0, 238, 255, 0.3); color:#00eeff; font-weight:700; cursor:pointer;">Scroll To Top</button>
-                </div>
-            </div>
+.auth-form { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+.auth-form input, .auth-form select { 
+    width: 100%; 
+    padding: 12px; 
+    background: rgba(20, 24, 33, 0.8); 
+    border: 1px solid rgba(255, 255, 255, 0.1); 
+    border-radius: 8px; 
+    font-size: 14px; 
+    outline: none; 
+    color: #fff;
+    transition: all 0.3s;
+}
+.auth-form input:focus { 
+    border-color: #00eeff; 
+    box-shadow: 0 0 8px rgba(0, 238, 255, 0.3);
+}
+.auth-form select option { background-color: #1c212c; color: white; }
+.auth-btn { 
+    background: linear-gradient(135deg, #009df6, #00eeff); 
+    color: white; 
+    border: none; 
+    padding: 12px; 
+    font-weight: bold; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    margin-top: 10px; 
+    font-size: 15px; 
+    box-shadow: 0 4px 15px rgba(0, 238, 255, 0.3);
+}
+.auth-btn:hover { 
+    background: linear-gradient(135deg, #00eeff, #009df6); 
+    box-shadow: 0 4px 20px rgba(0, 238, 255, 0.5);
+}
+.toggle-text { margin-top: 20px; font-size: 14px; color: #a0a5b5; cursor: pointer; }
+.toggle-text span { color: #00eeff; font-weight: bold; }
 
-            <div class="messages-area">
-                <div class="chat-with-header">
-                    <div class="chat-with-avatar" id="chat-with-avatar">?</div>
-                    <div class="chat-with-meta">
-                        <div id="chat-with-name" class="chat-with-name">Select a user to start chatting</div>
-                        <div id="chat-with-status" class="chat-with-status">One-to-one private chat</div>
-                    </div>
-                    
-                    <div class="account-panel-container">
-                        <button id="account-toggle" class="account-toggle" title="Open your account details">
-                            <img id="account-avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%231c212c'/></svg>" alt="My profile" />
-                        </button>
-                        <div id="account-panel" class="account-panel hidden">
-                            <div class="account-preview">
-                                <img id="account-avatar-large" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%231c212c'/></svg>" alt="Profile photo" />
-                                <div class="account-info">
-                                    <div id="account-username" class="account-name">Loading...</div>
-                                    <div id="account-email" class="account-detail">Email: none</div>
-                                    <div id="account-phone" class="account-detail">Phone: none</div>
-                                </div>
-                            </div>
-                            <button id="account-edit-btn" class="account-action-btn">Edit Profile</button>
-                            <button id="account-logout-btn" class="account-action-btn logout-btn">Logout</button>
-                        </div>
-                    </div>
-                </div>
+#chat-interface { 
+    display: none; 
+    flex-direction: column; 
+    width: 95vw; 
+    max-width: 1200px;
+    height: 85vh; 
+    background: rgba(28, 33, 44, 0.85); 
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    overflow: hidden;
+}
 
-                <ul id="messages"></ul>
-                <div id="typing-indicator" class="typing-status"></div>
+.chat-header { 
+    background-color: rgba(20, 24, 33, 0.9); 
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
+    padding: 15px 25px; 
+}
+.hk-title-container { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.main-hk-title { 
+    font-size: 26px; 
+    font-weight: 900; 
+    letter-spacing: 1px;
+    color: #00eeff;
+    text-shadow: 0 0 12px rgba(0, 238, 255, 0.5);
+}
+.neon-icon { color: #00eeff; font-size: 22px; }
+.room-title { font-size: 14px; color: #a0a5b5; margin-left: 15px; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 20px; }
+.chat-user-banner { margin-top: 12px; color: #c7d2e3; font-size: 13px; text-align: right; padding-right: 10px; }
+.logged-in-user { color: #00eeff; font-weight: 700; }
 
-                <form id="chat-form" onsubmit="event.preventDefault();">
-                    <div id="preview-container" style="display: none; position: relative; padding: 10px; background: rgba(30, 37, 49, 0.9); border-radius: 8px; margin-bottom: 10px; max-width: 150px;">
-                        <img id="image-preview" src="" style="max-width: 100%; max-height: 100px; border-radius: 6px; display: block;" />
-                        <button type="button" id="cancel-preview-btn" style="position: absolute; top: -5px; right: -5px; background: #ff4a5a; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center;">X</button>
-                    </div>
+.chat-main-container { display: flex; flex-grow: 1; height: calc(100% - 140px); }
 
-                    <div class="form-container">
-                        <label for="image-input" class="attach-btn" title="Upload Media Media">📷</label>
-                        <input type="file" id="image-input" accept="image/*" style="display: none;" />
-                        <input id="message-input" autocomplete="off" placeholder="Type a message secure..." />
-                        <button type="submit" class="send-btn">Send</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+.users-sidebar { width: 280px; background-color: rgba(24, 29, 38, 0.5); border-right: 1px solid rgba(255,255,255,0.05); padding: 25px; display: flex; flex-direction: column; min-height: 0; }
+.users-sidebar h3 { font-size: 16px; color: #a0a5b5; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; margin-bottom: 15px; }
+#active-users-list { list-style: none; display: flex; flex-direction: column; gap: 10px; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 
-    <div id="profile-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:9999; backdrop-filter: blur(4px);">
-        <div style="background:#0f1720; padding:25px; border-radius:16px; width:380px; color:#e6eef8; border: 1px solid rgba(0, 238, 255, 0.2); box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
-            <h3 style="margin-bottom:15px; font-weight: 800; letter-spacing: 0.5px; color:#00eeff;">Update Profile Engine</h3>
-            <form id="profile-form" onsubmit="event.preventDefault();">
-                <div style="margin-bottom:15px; display:flex; gap:12px; align-items:center;">
-                    <img id="profile-avatar-preview" src="" alt="avatar preview" style="width:60px; height:60px; border-radius:50%; object-fit:cover; display:none; border:2px solid #00eeff; box-shadow: 0 0 10px rgba(0,238,255,0.3);" />
-                    <div style="flex:1;">
-                        <label style="font-size: 12px; color:#8fa4bf; text-transform: uppercase; font-weight: 700;">Status Status Info</label>
-                        <textarea id="profile-about" rows="2" style="width:100%; padding:8px; border-radius:8px; background:#141821; color:#fff; border:1px solid rgba(255,255,255,0.1); font-size:13px; resize: none;"></textarea>
-                    </div>
-                </div>
-                <div style="margin-bottom:12px;">
-                    <label style="font-size: 12px; color:#8fa4bf; display:block; margin-bottom:4px; font-weight:700;">AVATAR FILE</label>
-                    <input type="file" id="profile-avatar" accept="image/*" style="font-size: 13px; color:#8fa4bf;" />
-                </div>
-                <div style="margin-bottom:12px;">
-                    <label style="font-size: 12px; color:#8fa4bf; display:block; margin-bottom:4px; font-weight:700;">PHONE NUMBER</label>
-                    <input id="profile-phone" type="text" placeholder="Enter contact node..." style="width:100%; padding:10px; border-radius:8px; background:#141821; color:#fff; border:1px solid rgba(255,255,255,0.1); font-size:13px;" />
-                </div>
-                <div style="margin-bottom:20px;">
-                    <label style="font-size: 12px; color:#8fa4bf; display:block; margin-bottom:4px; font-weight:700;">EMAIL DOMAIN</label>
-                    <input id="profile-email" type="email" placeholder="Enter mail network..." style="width:100%; padding:10px; border-radius:8px; background:#141821; color:#fff; border:1px solid rgba(255,255,255,0.1); font-size:13px;" />
-                </div>
-                <div style="display:flex; gap:10px; justify-content:flex-end;">
-                    <button type="button" id="close-profile" style="padding:10px 16px; background:rgba(255,255,255,0.06); color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px;">Cancel</button>
-                    <button type="submit" style="padding:10px 20px; background:linear-gradient(135deg, #009df6, #00eeff); border:none; color:#071423; font-weight:800; border-radius:8px; cursor:pointer; font-size:13px; box-shadow: 0 4px 12px rgba(0,238,255,0.3);">Save Changes</button>
-                </div>
-            </form>
-        </div>
-    </div>
+.sidebar-footer {
+    margin-top: auto;
+    padding-top: 16px;
+}
 
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script src="/client.js"></script>
-</body>
-</html>
+.account-panel-container { margin-left: auto; position: relative; }
+.account-toggle { width: 48px; height: 48px; border: 1px solid rgba(255,255,255,0.08); border-radius: 50%; background: rgba(0,0,0,0.35); padding: 0; display: grid; place-items: center; cursor: pointer; }
+.account-toggle img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.account-panel { position: absolute; right: 0; top: 60px; min-width: 240px; background: rgba(11, 18, 28, 0.98); border: 1px solid rgba(0,238,255,0.18); border-radius: 18px; padding: 16px; box-shadow: 0 24px 60px rgba(0,0,0,0.35); z-index: 20; }
+.account-panel.hidden { display: none; }
+.account-preview { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; }
+.account-preview img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(0,238,255,0.18); }
+.account-info { display: flex; flex-direction: column; gap: 4px; }
+.account-name { font-size: 16px; font-weight: 800; color: #fff; }
+.account-detail { font-size: 13px; color: #8fa4bf; }
+.account-action-btn { width: 100%; padding: 10px 14px; border-radius: 12px; border: none; background: rgba(0,238,255,0.1); color: #eaf4ff; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
+.account-action-btn.logout-btn { background: #ff4a5a; color: #fff; }
+.account-action-btn:hover { opacity: 0.95; }
+
+.user-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 10px;
+    background: rgba(20, 24, 33, 0.8);
+    color: #e3e6ed;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.user-btn:hover { background: rgba(30, 37, 49, 0.95); }
+.user-btn.active { background: rgba(0, 238, 255, 0.12); border: 1px solid rgba(0, 238, 255, 0.35); }
+
+.user-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: rgba(0,238,255,0.14);
+    color: #00eeff;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 14px;
+}
+.user-name { flex: 1; color: #fff; text-transform: none; }
+
+#profile-modal textarea { background: rgba(20,24,33,0.6); border: 1px solid rgba(255,255,255,0.04); color: #fff; outline: none;}
+.unread-badge {
+    margin-left: auto;
+    background: #ff4a5a;
+    color: #fff;
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 700;
+    min-width: 22px;
+    text-align: center;
+    box-shadow: 0 0 10px rgba(255, 74, 90, 0.3);
+}
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.status-dot.online {
+    background: #00ff88;
+    box-shadow: 0 0 8px #00ff88;
+}
+.status-dot.offline {
+    background: #717e94;
+}
+
+.messages-area { flex-grow: 1; display: flex; flex-direction: column; background: rgba(16, 20, 27, 0.4); position: relative; }
+.chat-with-header { display: flex; align-items: center; gap: 14px; padding: 20px 25px 10px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.chat-with-avatar { width: 52px; height: 52px; border-radius: 50%; background: rgba(0,238,255,0.14); color: #00eeff; display: grid; place-items: center; font-size: 20px; font-weight: 900; border: 1px solid rgba(0,238,255,0.25); }
+.chat-with-meta { display: flex; flex-direction: column; gap: 4px; }
+.chat-with-name { font-size: 18px; font-weight: 800; color: #ffffff; }
+.chat-with-status { font-size: 13px; color: #8fa4bf; }
+#messages { list-style-type: none; padding: 20px 25px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+#messages li { max-width: 65%; padding: 12px 18px; border-radius: 12px; font-size: 15px; line-height: 1.4; box-shadow: 0 4px 10px rgba(0,0,0,0.1); position: relative;}
+
+.my-msg { 
+    background-color: rgba(0, 157, 246, 0.15); 
+    border: 1px solid #00eeff; 
+    color: #fff; 
+    align-self: flex-end; 
+    box-shadow: 0 0 10px rgba(0, 238, 255, 0.2);
+}
+.other-msg { 
+    background-color: rgba(255, 74, 144, 0.1); 
+    border: 1px solid #ff4a90; 
+    color: #fff; 
+    align-self: flex-start; 
+    box-shadow: 0 0 10px rgba(255, 74, 144, 0.15);
+}
+.system-msg { 
+    background-color: rgba(255, 238, 0, 0.08); 
+    border: 1px solid #ffee00;
+    color: #fffbbf; 
+    font-size: 12px; 
+    font-style: italic; 
+    align-self: center; 
+    text-align: center; 
+    border-radius: 20px !important; 
+    padding: 6px 16px !important; 
+    box-shadow: 0 0 8px rgba(255, 238, 0, 0.1);
+}
+.msg-user { display: block; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 5px; opacity: 0.6; letter-spacing: 0.5px; }
+.my-msg .msg-user { color: #00eeff; }
+.other-msg .msg-user { color: #ff4a90; }
+
+.typing-status { padding: 5px 25px; font-size: 13px; color: #00ff88; font-style: italic; min-height: 25px; text-shadow: 0 0 5px rgba(0, 255, 136, 0.4); }
+
+#chat-form { background: rgba(20, 24, 33, 0.9); padding: 20px; border-top: 1px solid rgba(255, 255, 255, 0.05); }
+.form-container { display: flex; width: 100%; gap: 15px; }
+#message-input { 
+    flex-grow: 1; 
+    padding: 14px 20px; 
+    background: rgba(30, 37, 49, 0.8); 
+    border: 1px solid rgba(255,255,255,0.1); 
+    border-radius: 30px; 
+    font-size: 15px; 
+    outline: none; 
+    color: white;
+}
+#message-input:focus { border-color: #00eeff; box-shadow: 0 0 10px rgba(0,238,255,0.2); }
+.send-btn { 
+    padding: 10px 28px; 
+    background: transparent; 
+    color: #00eeff; 
+    border: 1px solid #00eeff; 
+    border-radius: 30px;
+    font-size: 15px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    box-shadow: 0 0 10px rgba(0,238,255,0.2);
+    transition: all 0.3s;
+}
+.send-btn:hover { background: #00eeff; color: #141821; box-shadow: 0 0 15px #00eeff; }
+
+.attach-btn {
+    font-size: 20px;
+    background: transparent;
+    border: 1px solid #00eeff;
+    padding: 10px 14px;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0, 238, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+.attach-btn:hover {
+    background: #00eeff;
+    transform: scale(1.05);
+}
+
+.chat-img {
+    max-width: 100%;
+    max-height: 250px;
+    border-radius: 8px;
+    margin-top: 5px;
+    display: block;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.date-separator {
+    align-self: center;
+    background: rgba(255,255,255,0.04);
+    color: #c7d2e3;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.03);
+    margin: 8px 0;
+}
+
+.msg-meta {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #b8c6d9;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.msg-status { opacity: 0.85; font-size: 12px; }
+.msg-status.read { color: #00ff88; }
+.msg-status.delivered { color: #c7d2e3; }
+.msg-status.sent { color: #a0a5b5; }
+
+.msg-edited { font-size: 11px; color: #9aa8bf; margin-left: 6px; }
+
+.msg-actions { display: flex; gap: 6px; margin-top: 6px; justify-content: flex-end; }
+.msg-action-btn { background: transparent; border: none; cursor: pointer; font-size: 14px; padding: 6px; border-radius: 6px; color: #dbe8ff; }
+.msg-action-btn:hover { background: rgba(255,255,255,0.03); transform: translateY(-1px); }
+
+.date-separator, .system-msg { max-width: 60%; }
+#messages { scroll-behavior: smooth; }
+#sidebar-chat-btn { transition: all 0.2s; }
+#sidebar-chat-btn:hover { opacity: 0.9; transform: translateY(-1px); }
